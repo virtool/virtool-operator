@@ -18,22 +18,22 @@ package controller
 
 import (
 	"context"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
+	"github.com/go-logr/logr"
 )
 
 // VirtoolAppReconciler reconciles a VirtoolApp object
 type VirtoolAppReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
 //+kubebuilder:rbac:groups=virtool.virtool.ca,resources=virtoolapps,verbs=get;list;watch;create;update;patch;delete
@@ -41,6 +41,7 @@ type VirtoolAppReconciler struct {
 //+kubebuilder:rbac:groups=virtool.virtool.ca,resources=virtoolapps/finalizers,verbs=update
 
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch,namespace=default
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -52,34 +53,24 @@ type VirtoolAppReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *VirtoolAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
+	r.Log.Info("Starting reconciliation", "request", req)
 
-	// List all pods in the cluster
 	var podList corev1.PodList
 	if err := r.List(ctx, &podList, &client.ListOptions{}); err != nil {
-		logger.Error(err, "Unable to list pods")
+		r.Log.Error(err, "Unable to list pods")
 		return ctrl.Result{}, err
 	}
 
-	// Iterate through all pods
+	r.Log.Info("Listed pods", "count", len(podList.Items))
+
 	for _, pod := range podList.Items {
-		// Log the pod name and namespace
-		logger.Info("Processing pod", "name", pod.Name, "namespace", pod.Namespace)
-
-		// Iterate through all containers in the pod
+		r.Log.Info("Processing pod", "pod", pod.Name, "namespace", pod.Namespace)
 		for _, container := range pod.Spec.Containers {
-			// Extract the image tag
-			imageParts := strings.Split(container.Image, ":")
-			imageTag := "latest" // Default tag if not specified
-			if len(imageParts) > 1 {
-				imageTag = imageParts[len(imageParts)-1]
-			}
-
-			// Log the container name and image tag
-			logger.Info("Container image tag", "container", container.Name, "image", container.Image, "tag", imageTag)
+			r.Log.Info("Container image tag", "pod", pod.Name, "container", container.Name, "image", container.Image)
 		}
 	}
 
+	r.Log.Info("Reconciliation completed")
 	return ctrl.Result{}, nil
 }
 

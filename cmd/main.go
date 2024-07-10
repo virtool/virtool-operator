@@ -122,9 +122,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger := ctrl.Log.WithName("virtool-controller")
 	if err = (&controller.VirtoolAppReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Log:    logger,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtoolApp")
 		os.Exit(1)
