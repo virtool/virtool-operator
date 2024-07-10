@@ -18,6 +18,9 @@ package controller
 
 import (
 	"context"
+	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,6 +40,8 @@ type VirtoolAppReconciler struct {
 //+kubebuilder:rbac:groups=virtool.virtool.ca,resources=virtoolapps/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=virtool.virtool.ca,resources=virtoolapps/finalizers,verbs=update
 
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
@@ -47,9 +52,33 @@ type VirtoolAppReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *VirtoolAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// List all pods in the cluster
+	var podList corev1.PodList
+	if err := r.List(ctx, &podList, &client.ListOptions{}); err != nil {
+		logger.Error(err, "Unable to list pods")
+		return ctrl.Result{}, err
+	}
+
+	// Iterate through all pods
+	for _, pod := range podList.Items {
+		// Log the pod name and namespace
+		logger.Info("Processing pod", "name", pod.Name, "namespace", pod.Namespace)
+
+		// Iterate through all containers in the pod
+		for _, container := range pod.Spec.Containers {
+			// Extract the image tag
+			imageParts := strings.Split(container.Image, ":")
+			imageTag := "latest" // Default tag if not specified
+			if len(imageParts) > 1 {
+				imageTag = imageParts[len(imageParts)-1]
+			}
+
+			// Log the container name and image tag
+			logger.Info("Container image tag", "container", container.Name, "image", container.Image, "tag", imageTag)
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
