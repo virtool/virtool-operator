@@ -24,29 +24,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	myappv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
+	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
 )
 
-// MyAppReconciler reconciles a MyApp object
-type MyAppReconciler struct {
+// VirtoolAppReconciler reconciles a VirtoolApp object
+type VirtoolAppReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=myapp.example.com,resources=myapps,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=myapp.example.com,resources=myapps/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=myapp.example.com,resources=myapps/finalizers,verbs=update
+//+kubebuilder:rbac:groups=virtool.virtool.ca,resources=virtoolapps,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=virtool.virtool.ca,resources=virtoolapps/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=virtool.virtool.ca,resources=virtoolapps/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the MyApp object against the actual cluster state, and then
+// the VirtoolApp object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
-func (r *MyAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *VirtoolAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
@@ -55,8 +55,8 @@ func (r *MyAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *MyAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *VirtoolAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&myappv1alpha1.MyApp{}).
+		For(&virtoolv1alpha1.VirtoolApp{}).
 		Complete(r)
 }

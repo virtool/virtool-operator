@@ -27,10 +27,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	myappv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
+	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
 )
 
-var _ = Describe("MyApp Controller", func() {
+var _ = Describe("VirtoolApp Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -40,13 +40,13 @@ var _ = Describe("MyApp Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		myapp := &myappv1alpha1.MyApp{}
+		virtoolapp := &virtoolv1alpha1.VirtoolApp{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind MyApp")
-			err := k8sClient.Get(ctx, typeNamespacedName, myapp)
+			By("creating the custom resource for the Kind VirtoolApp")
+			err := k8sClient.Get(ctx, typeNamespacedName, virtoolapp)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &myappv1alpha1.MyApp{
+				resource := &virtoolv1alpha1.VirtoolApp{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -59,16 +59,16 @@ var _ = Describe("MyApp Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &myappv1alpha1.MyApp{}
+			resource := &virtoolv1alpha1.VirtoolApp{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance MyApp")
+			By("Cleanup the specific resource instance VirtoolApp")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &MyAppReconciler{
+			controllerReconciler := &VirtoolAppReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}

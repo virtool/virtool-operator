@@ -23,17 +23,17 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// MyAppSpec defines the desired state of MyApp
-type MyAppSpec struct {
+// VirtoolAppSpec defines the desired state of VirtoolApp
+type VirtoolAppSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of MyApp. Edit myapp_types.go to remove/update
+	// Foo is an example field of VirtoolApp. Edit virtoolapp_types.go to remove/update
 	Foo string `json:"foo,omitempty"`
 }
 
-// MyAppStatus defines the observed state of MyApp
-type MyAppStatus struct {
+// VirtoolAppStatus defines the observed state of VirtoolApp
+type VirtoolAppStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -41,24 +41,24 @@ type MyAppStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// MyApp is the Schema for the myapps API
-type MyApp struct {
+// VirtoolApp is the Schema for the virtoolapps API
+type VirtoolApp struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   MyAppSpec   `json:"spec,omitempty"`
-	Status MyAppStatus `json:"status,omitempty"`
+	Spec   VirtoolAppSpec   `json:"spec,omitempty"`
+	Status VirtoolAppStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// MyAppList contains a list of MyApp
-type MyAppList struct {
+// VirtoolAppList contains a list of VirtoolApp
+type VirtoolAppList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []MyApp `json:"items"`
+	Items           []VirtoolApp `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&MyApp{}, &MyAppList{})
+	SchemeBuilder.Register(&VirtoolApp{}, &VirtoolAppList{})
 }

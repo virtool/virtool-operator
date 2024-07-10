@@ -32,7 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	myappv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
+	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -72,7 +72,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = myappv1alpha1.AddToScheme(scheme.Scheme)
+	err = virtoolv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
