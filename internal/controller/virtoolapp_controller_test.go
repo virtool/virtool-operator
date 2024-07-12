@@ -37,18 +37,30 @@ import (
 )
 
 type TestLogSink struct {
-	buffer []string
+	buffer  []string
+	logChan chan string
+}
+
+func NewTestLogSink() *TestLogSink {
+	return &TestLogSink{
+		logChan: make(chan string, 100), // Buffered channel to prevent blocking
+	}
 }
 
 func (t *TestLogSink) Init(info logr.RuntimeInfo) {}
 func (t *TestLogSink) Enabled(level int) bool     { return true }
 func (t *TestLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
-	t.buffer = append(t.buffer, fmt.Sprintf("%s: %v", msg, keysAndValues))
+	logMsg := fmt.Sprintf("%s: %v", msg, keysAndValues)
+	t.buffer = append(t.buffer, logMsg)
+	t.logChan <- logMsg
 }
 
 func (t *TestLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
-	t.buffer = append(t.buffer, msg)
+	logMsg := fmt.Sprintf("ERROR: %s: %v", msg, err)
+	t.buffer = append(t.buffer, logMsg)
+	t.logChan <- logMsg
 }
+
 func (t *TestLogSink) WithValues(keysAndValues ...interface{}) logr.LogSink { return t }
 func (t *TestLogSink) WithName(name string) logr.LogSink                    { return t }
 func (t *TestLogSink) String() string {
@@ -141,8 +153,8 @@ var _ = Describe("VirtoolApp Controller", func() {
 		})
 
 		It("should locate and print container images", func() {
-			logOutput := &TestLogSink{}
-			logger := logr.New(logOutput)
+			logSink := NewTestLogSink()
+			logger := logr.New(logSink)
 
 			reconciler := &VirtoolAppReconciler{
 				Client: k8sClient,
@@ -150,25 +162,54 @@ var _ = Describe("VirtoolApp Controller", func() {
 				Log:    logger,
 			}
 
-			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: typeNamespacedName})
-			Expect(err).NotTo(HaveOccurred())
+			go func() {
+				_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: typeNamespacedName})
+				Expect(err).NotTo(HaveOccurred())
+			}()
 
-			Eventually(func() string {
-				fmt.Println("Full log output:", logOutput.String())
-				return logOutput.String()
-			}, 60*time.Second, time.Second).Should(And(
-				ContainSubstring("Starting reconciliation"),
-				ContainSubstring("Listed pods"),
-				ContainSubstring("Container image tag"),
-				ContainSubstring("test-pod"),
-				ContainSubstring("container1"),
-				ContainSubstring("nginx:1.14.2"),
-				ContainSubstring("container2"),
-				ContainSubstring("busybox:1.28"),
-				ContainSubstring("Reconciliation completed"),
-			))
+			expectedLogs := []string{
+				"Starting reconciliation",
+				"Listed pods",
+				"Processing pod",
+				"Container image tag",
+				"test-pod",
+				"container1",
+				"nginx:1.14.2",
+				"container2",
+				"busybox:1.28",
+				"Reconciliation completed",
+			}
 
-			fmt.Println("Log output:", logOutput.String())
+			timeout := time.After(10 * time.Second)
+			receivedLogs := make([]string, 0)
+
+			for {
+				select {
+				case logMsg := <-logSink.logChan:
+					receivedLogs = append(receivedLogs, logMsg)
+					if containsAllLogs(receivedLogs, expectedLogs) {
+						return // All expected logs found
+					}
+				case <-timeout:
+					Fail(fmt.Sprintf("Timed out waiting for log messages. Received logs:\n%s", strings.Join(receivedLogs, "\n")))
+				}
+			}
 		})
 	})
 })
+
+func containsAllLogs(receivedLogs []string, expectedLogs []string) bool {
+	for _, expected := range expectedLogs {
+		found := false
+		for _, received := range receivedLogs {
+			if strings.Contains(received, expected) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
