@@ -19,14 +19,12 @@ package controller
 import (
 	"context"
 
+	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
-	"github.com/go-logr/logr"
 )
 
 // VirtoolAppReconciler reconciles a VirtoolApp object
