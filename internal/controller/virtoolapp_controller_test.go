@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -36,14 +37,17 @@ import (
 	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
 )
 
+// ------------------------------------------------------------------------------
+
 type TestLogSink struct {
-	buffer  []string
 	logChan chan string
+	buffer  []string
+	mu      sync.Mutex
 }
 
 func NewTestLogSink() *TestLogSink {
 	return &TestLogSink{
-		logChan: make(chan string, 100), // Buffered channel to prevent blocking
+		logChan: make(chan string, 100),
 	}
 }
 
@@ -51,96 +55,52 @@ func (t *TestLogSink) Init(info logr.RuntimeInfo) {}
 func (t *TestLogSink) Enabled(level int) bool     { return true }
 func (t *TestLogSink) Info(level int, msg string, keysAndValues ...interface{}) {
 	logMsg := fmt.Sprintf("%s: %v", msg, keysAndValues)
+	t.mu.Lock()
 	t.buffer = append(t.buffer, logMsg)
+	t.mu.Unlock()
 	t.logChan <- logMsg
 }
 
 func (t *TestLogSink) Error(err error, msg string, keysAndValues ...interface{}) {
 	logMsg := fmt.Sprintf("ERROR: %s: %v", msg, err)
+	t.mu.Lock()
 	t.buffer = append(t.buffer, logMsg)
+	t.mu.Unlock()
 	t.logChan <- logMsg
 }
 
 func (t *TestLogSink) WithValues(keysAndValues ...interface{}) logr.LogSink { return t }
 func (t *TestLogSink) WithName(name string) logr.LogSink                    { return t }
 func (t *TestLogSink) String() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	return strings.Join(t.buffer, "\n")
 }
 
 // ------------------------------------------------------------------------------
 
 var _ = Describe("VirtoolApp Controller", func() {
-	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
-		const namespace = "default"
+	const resourceName = "test-resource"
+	const namespace = "default"
 
-		ctx := context.Background()
+	ctx := context.Background()
 
-		typeNamespacedName := types.NamespacedName{
-			Name:      resourceName,
-			Namespace: namespace,
-		}
-		virtoolapp := &virtoolv1alpha1.VirtoolApp{}
+	typeNamespacedName := types.NamespacedName{
+		Name:      resourceName,
+		Namespace: namespace,
+	}
+	virtoolapp := &virtoolv1alpha1.VirtoolApp{}
 
-		BeforeEach(func() {
-			By("creating the custom resource for the Kind VirtoolApp")
-			err := k8sClient.Get(ctx, typeNamespacedName, virtoolapp)
-			if err != nil && errors.IsNotFound(err) {
-				resource := &virtoolv1alpha1.VirtoolApp{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: namespace,
-					},
-					// TODO(user): Specify other spec details if needed.
-				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
-			}
+	BeforeEach(func() {
+		createCustomResource(ctx, typeNamespacedName, virtoolapp)
+	})
 
-			By("creating a test pod")
-			testPod := &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-pod",
-					Namespace: namespace,
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "container1",
-							Image: "nginx:1.14.2",
-						},
-						{
-							Name:  "container2",
-							Image: "busybox:1.28",
-						},
-					},
-				},
-			}
-			Expect(k8sClient.Create(ctx, testPod)).To(Succeed())
+	AfterEach(func() {
+		cleanupResource(ctx, typeNamespacedName)
+	})
 
-			// Verify pod creation
-			createdPod := &corev1.Pod{}
-			Eventually(func() error {
-				return k8sClient.Get(ctx, types.NamespacedName{Name: "test-pod", Namespace: namespace}, createdPod)
-			}, time.Second*10, time.Millisecond*250).Should(Succeed())
-		})
-
-		AfterEach(func() {
-			By("Cleanup the specific resource instance VirtoolApp")
-			resource := &virtoolv1alpha1.VirtoolApp{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
-
-			By("Cleanup the test pod")
-			testPod := &corev1.Pod{}
-			err = k8sClient.Get(ctx, types.NamespacedName{Name: "test-pod", Namespace: namespace}, testPod)
-			if err == nil {
-				Expect(k8sClient.Delete(ctx, testPod)).To(Succeed())
-			}
-		})
-
+	Describe("Basic Reconciliation", func() {
 		It("should successfully reconcile the resource", func() {
-			By("Reconciling the created resource")
 			controllerReconciler := &VirtoolAppReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
@@ -150,6 +110,16 @@ var _ = Describe("VirtoolApp Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Describe("Container Image Logging", func() {
+		BeforeEach(func() {
+			createTestPod(ctx, namespace)
+		})
+
+		AfterEach(func() {
+			cleanupTestPod(ctx, namespace)
 		})
 
 		It("should locate and print container images", func() {
@@ -188,7 +158,7 @@ var _ = Describe("VirtoolApp Controller", func() {
 				case logMsg := <-logSink.logChan:
 					receivedLogs = append(receivedLogs, logMsg)
 					if containsAllLogs(receivedLogs, expectedLogs) {
-						return // All expected logs found
+						return
 					}
 				case <-timeout:
 					Fail(fmt.Sprintf("Timed out waiting for log messages. Received logs:\n%s", strings.Join(receivedLogs, "\n")))
@@ -198,10 +168,79 @@ var _ = Describe("VirtoolApp Controller", func() {
 	})
 })
 
+func createCustomResource(ctx context.Context, namespacedName types.NamespacedName, virtoolapp *virtoolv1alpha1.VirtoolApp) {
+	By("creating the custom resource for the Kind VirtoolApp")
+	err := k8sClient.Get(ctx, namespacedName, virtoolapp)
+	if err != nil && errors.IsNotFound(err) {
+		resource := &virtoolv1alpha1.VirtoolApp{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      namespacedName.Name,
+				Namespace: namespacedName.Namespace,
+			},
+			// TODO: Specify other spec details if needed.
+		}
+		Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+	}
+}
+
+func createTestPod(ctx context.Context, namespace string) {
+	By("creating a test pod")
+	testPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: namespace,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "container1",
+					Image: "nginx:1.14.2",
+				},
+				{
+					Name:  "container2",
+					Image: "busybox:1.28",
+				},
+			},
+		},
+	}
+	Expect(k8sClient.Create(ctx, testPod)).To(Succeed())
+
+	createdPod := &corev1.Pod{}
+	Eventually(func() error {
+		return k8sClient.Get(ctx, types.NamespacedName{Name: "test-pod", Namespace: namespace}, createdPod)
+	}, time.Second*10, time.Millisecond*250).Should(Succeed())
+}
+
+func cleanupResource(ctx context.Context, namespacedName types.NamespacedName) {
+	By("Cleanup the specific resource instance VirtoolApp")
+	resource := &virtoolv1alpha1.VirtoolApp{}
+	err := k8sClient.Get(ctx, namespacedName, resource)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+}
+
+func cleanupTestPod(ctx context.Context, namespace string) {
+	By("Cleanup the test pod")
+	testPod := &corev1.Pod{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: "test-pod", Namespace: namespace}, testPod)
+	if err == nil {
+		Expect(k8sClient.Delete(ctx, testPod)).To(Succeed())
+	}
+}
+
 func containsAllLogs(receivedLogs []string, expectedLogs []string) bool {
+	if len(expectedLogs) == 0 {
+		return true
+	}
+
+	receivedMap := make(map[string]struct{}, len(receivedLogs))
+	for _, log := range receivedLogs {
+		receivedMap[log] = struct{}{}
+	}
+
 	for _, expected := range expectedLogs {
 		found := false
-		for _, received := range receivedLogs {
+		for received := range receivedMap {
 			if strings.Contains(received, expected) {
 				found = true
 				break
