@@ -32,15 +32,19 @@ spec:
           metadata:
             type: object
           spec:
-            description: VirtoolAppSpec defines the desired state of VirtoolApp
+            description: VirtoolAppSpec defines the desired state of the application
             properties:
               components:
-                additionalProperties:
+                description: Components is a list of components for the application
+                items:
                   description: ComponentSpec defines the specification for a single
                     component
                   properties:
                     image:
                       description: Image is the container image for the component
+                      type: string
+                    name:
+                      description: Name is the name of the component
                       type: string
                     postUpdateJob:
                       description: PostUpdateJob defines a job to run after updating
@@ -131,122 +135,32 @@ spec:
                             cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                           type: object
                       type: object
-                    updateOrder:
-                      description: UpdateOrder defines the order in which this component
-                        should be updated
-                      type: integer
-                    version:
-                      description: Version is the desired version of the component
-                      type: string
                   required:
                   - image
-                  - version
+                  - name
                   type: object
-                description: Components is a map of component names to their desired
-                  specifications
-                type: object
-              globalConfig:
-                description: GlobalConfig defines global settings for all components
-                properties:
-                  imagePullSecret:
-                    description: ImagePullSecret is the name of the secret containing
-                      registry credentials
-                    type: string
-                  nodeSelector:
-                    additionalProperties:
-                      type: string
-                    description: NodeSelector defines the node selector for all components
-                    type: object
-                  registry:
-                    description: Registry is the default container registry to use
-                    type: string
-                  tolerations:
-                    description: Tolerations defines the tolerations for all components
-                    items:
-                      description: The pod this Toleration is attached to tolerates
-                        any taint that matches the triple <key,value,effect> using
-                        the matching operator <operator>.
-                      properties:
-                        effect:
-                          description: Effect indicates the taint effect to match.
-                            Empty means match all taint effects. When specified, allowed
-                            values are NoSchedule, PreferNoSchedule and NoExecute.
-                          type: string
-                        key:
-                          description: Key is the taint key that the toleration applies
-                            to. Empty means match all taint keys. If the key is empty,
-                            operator must be Exists; this combination means to match
-                            all values and all keys.
-                          type: string
-                        operator:
-                          description: Operator represents a key's relationship to
-                            the value. Valid operators are Exists and Equal. Defaults
-                            to Equal. Exists is equivalent to wildcard for value,
-                            so that a pod can tolerate all taints of a particular
-                            category.
-                          type: string
-                        tolerationSeconds:
-                          description: TolerationSeconds represents the period of
-                            time the toleration (which must be of effect NoExecute,
-                            otherwise this field is ignored) tolerates the taint.
-                            By default, it is not set, which means tolerate the taint
-                            forever (do not evict). Zero and negative values will
-                            be treated as 0 (evict immediately) by the system.
-                          format: int64
-                          type: integer
-                        value:
-                          description: Value is the taint value the toleration matches
-                            to. If the operator is Exists, the value should be empty,
-                            otherwise just a regular string.
-                          type: string
-                      type: object
-                    type: array
-                type: object
-              updateStrategy:
-                description: UpdateStrategy defines how updates should be performed
-                properties:
-                  maxSurge:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: MaxSurge defines the maximum number of pods that
-                      can be created over the desired number of pods
-                    x-kubernetes-int-or-string: true
-                  maxUnavailable:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: MaxUnavailable defines the maximum number of pods
-                      that can be unavailable during the update
-                    x-kubernetes-int-or-string: true
-                  type:
-                    description: Type is the type of update strategy (e.g., "RollingUpdate",
-                      "Recreate")
-                    type: string
-                required:
-                - type
-                type: object
+                type: array
+              version:
+                description: Version is the desired version of the application
+                type: string
             required:
             - components
+            - version
             type: object
           status:
-            description: VirtoolAppStatus defines the observed state of VirtoolApp
+            description: VirtoolAppStatus defines the observed state of the application
             properties:
-              componentStatus:
-                additionalProperties:
+              componentsStatus:
+                description: ComponentsStatus tracks the status of individual components
+                items:
                   description: ComponentStatus tracks the status of an individual
                     component
                   properties:
                     currentVersion:
                       description: CurrentVersion is the current version of the component
                       type: string
-                    desiredVersion:
-                      description: DesiredVersion is the version the component is
-                        being updated to
-                      type: string
-                    message:
-                      description: Message provides additional information about the
-                        component's status
+                    name:
+                      description: Name is the name of the component
                       type: string
                     readyReplicas:
                       description: ReadyReplicas is the number of replicas that are
@@ -263,13 +177,12 @@ spec:
                       type: integer
                   required:
                   - currentVersion
-                  - desiredVersion
+                  - name
                   - readyReplicas
                   - status
                   - updatedReplicas
                   type: object
-                description: ComponentStatus tracks the status of individual components
-                type: object
+                type: array
               conditions:
                 description: Conditions represent the latest available observations
                   of the VirtoolApp's state
@@ -340,14 +253,12 @@ spec:
                   - type
                   type: object
                 type: array
-              lastUpdateTime:
-                description: LastUpdateTime is the last time the status was updated
-                format: date-time
+              currentVersion:
+                description: CurrentVersion is the current version of the application
                 type: string
             required:
-            - componentStatus
-            - conditions
-            - lastUpdateTime
+            - componentsStatus
+            - currentVersion
             type: object
         type: object
     served: true
