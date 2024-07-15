@@ -24,7 +24,7 @@ import (
 	"time"
 
 	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
-	"github.com/bryce-davidson/virtool-operator/api/v1alpha1/testhelpers"
+	"github.com/bryce-davidson/virtool-operator/factory"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -86,7 +86,7 @@ var _ = Describe("VirtoolApp Controller", func() {
 
 	BeforeEach(func() {
 		// Use the new factory function to create the VirtoolApp
-		virtoolApp := testhelpers.NewVirtoolApp(resourceName, namespace)
+		virtoolApp := factory.NewVirtoolApp(resourceName, namespace)
 		Expect(k8sClient.Create(ctx, virtoolApp)).To(Succeed())
 	})
 
