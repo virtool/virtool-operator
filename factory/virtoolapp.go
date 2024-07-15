@@ -10,7 +10,8 @@ import (
 )
 
 func pointer(i int32) *int32 {
-	return &i
+	copy := i
+	return &copy
 }
 
 type VirtoolAppOption func(*virtoolv1alpha1.VirtoolApp)
@@ -43,7 +44,6 @@ func defaultResourceRequirements() corev1.ResourceRequirements {
 	}
 }
 
-// NewVirtoolApp creates a new virtoolv1alpha1.VirtoolApp with default values
 func NewVirtoolApp(name, namespace string, opts ...VirtoolAppOption) *virtoolv1alpha1.VirtoolApp {
 	v := &virtoolv1alpha1.VirtoolApp{
 		TypeMeta: metav1.TypeMeta{
@@ -85,31 +85,4 @@ func NewVirtoolApp(name, namespace string, opts ...VirtoolAppOption) *virtoolv1a
 	}
 
 	return v
-}
-
-func WithComponent(name string, spec virtoolv1alpha1.ComponentSpec) VirtoolAppOption {
-	return func(v *virtoolv1alpha1.VirtoolApp) {
-		if v.Spec.Components == nil {
-			v.Spec.Components = make(map[string]virtoolv1alpha1.ComponentSpec)
-		}
-		v.Spec.Components[name] = spec
-	}
-}
-
-func WithUpdateStrategy(strategy virtoolv1alpha1.UpdateStrategy) VirtoolAppOption {
-	return func(v *virtoolv1alpha1.VirtoolApp) {
-		v.Spec.UpdateStrategy = strategy
-	}
-}
-
-func WithGlobalConfig(config virtoolv1alpha1.GlobalConfig) VirtoolAppOption {
-	return func(v *virtoolv1alpha1.VirtoolApp) {
-		v.Spec.GlobalConfig = config
-	}
-}
-
-func WithStatus(status virtoolv1alpha1.VirtoolAppStatus) VirtoolAppOption {
-	return func(v *virtoolv1alpha1.VirtoolApp) {
-		v.Status = status
-	}
 }
