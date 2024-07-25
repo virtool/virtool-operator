@@ -1,0 +1,12 @@
+apiVersion: virtool.virtool.ca/v1alpha1
+kind: VirtoolApp
+metadata:
+  labels:
+    app.kubernetes.io/name: virtoolapp
+    app.kubernetes.io/instance: virtoolapp-sample
+    app.kubernetes.io/part-of: virtool-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: virtool-operator
+  name: virtoolapp-sample
+spec:
+  # TODO(user): Add fields here

@@ -1,0 +1,27 @@
+# permissions for end users to view virtoolapps.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: virtoolapp-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: virtool-operator
+    app.kubernetes.io/part-of: virtool-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: virtoolapp-viewer-role
+rules:
+- apiGroups:
+  - virtool.virtool.ca
+  resources:
+  - virtoolapps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - virtool.virtool.ca
+  resources:
+  - virtoolapps/status
+  verbs:
+  - get

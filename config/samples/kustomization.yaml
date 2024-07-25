@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- virtool_v1alpha1_virtoolapp.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples
