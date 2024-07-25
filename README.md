@@ -2,6 +2,7 @@
 
 A Kubernetes operator for keeping Virtool updated without downtime.
 
+_Work in Progress_
 
 ## Description
 // TODO(user): An in-depth paragraph about your project and overview of use
