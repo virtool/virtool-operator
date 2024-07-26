@@ -25,9 +25,9 @@ jobs:
       run: |
         go mod download
         go mod verify
+    
+    - name: Build Operator
+      run: make build
 
     - name: Run tests
       run: make test
-
-    - name: Build
-      run: make build
