@@ -16,13 +16,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.22.2'
-
-    - name: Install Operator SDK
-      uses: redhat-actions/openshift-tools-installer@v1
-      with:
-        source: github
-        operator-sdk: 'latest'
+        go-version: '1.22.4'
 
     - name: Install dependencies
       run: |
