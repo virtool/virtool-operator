@@ -37,4 +37,6 @@ jobs:
         go mod verify
 
     - name: Run tests
-      run: make test
+      run: | 
+        make build
+        make test
