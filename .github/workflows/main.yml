@@ -13,6 +13,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install Operator SDK
+      uses: redhat-actions/openshift-tools-installer@v1
+      with:
+        source: github
+        operator-sdk: '1.35.0'
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
