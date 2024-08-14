@@ -1,4 +1,4 @@
-version: 2
+version: 1
 
 before:
   hooks:
@@ -35,4 +35,6 @@ changelog:
       - "^test:"
 
 release:
-  name_template: "{{.Tag}}"
+  github:
+    owner: ianboyes
+    name: virtool/virtool-operator
