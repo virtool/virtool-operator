@@ -87,6 +87,13 @@ jobs:
         with:
           go-version: "1.21.11"
 
+      - name: Create tag
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a v0.0.${{ github.run_number }} -m "Release v0.0.${{ github.run_number }}"
+          git push origin v0.0.${{ github.run_number }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
