@@ -1,4 +1,4 @@
-name: Go Test
+name: Go Test and Release
 
 on:
   push:
@@ -30,13 +30,37 @@ jobs:
 
     - name: Check Go version
       run: go version
-    
+
     - name: Install dependencies
       run: |
         go mod download
         go mod verify
 
     - name: Run tests
-      run: | 
+      run: |
         make build
         make test
+
+  release:
+    name: Release
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+
+      - name: Install dependencies
+        run: npm clean-install
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
