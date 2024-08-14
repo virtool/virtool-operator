@@ -1,4 +1,4 @@
-version: "0.0.1"
+version: 2
 
 before:
   hooks:
@@ -35,4 +35,4 @@ changelog:
       - "^test:"
 
 release:
-  version: "{{ .Tag }}"
+  name_template: "{{.Tag}}"
