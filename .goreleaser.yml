@@ -3,9 +3,23 @@ version: 1
 before:
   hooks:
     - go mod tidy
+    - make generate
+    - make manifests
 
 builds:
-  - skip: true
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/manager/main.go
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.buildDate={{.Date}}
+    binary: manager
 
 archives:
   - name_template: >-
@@ -15,6 +29,14 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}_
       v{{ .Version }}
+  - format: tar.gz
+    files:
+      - src: "deploy/**/*"
+        dst: "deploy"
+      - src: "config/**/*"
+        dst: "config"
+      - LICENSE
+      - README.md
 
 checksum:
   name_template: "checksums.txt"
@@ -31,3 +53,5 @@ changelog:
 
 release:
   name_template: "{{.Tag}}"
+  extra_files:
+    - glob: ./bundle/**/*
