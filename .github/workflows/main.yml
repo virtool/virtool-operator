@@ -104,11 +104,11 @@ jobs:
       - name: Run semantic-release
         id: semantic
         env:
-          GITHUB_USERNAME: ${{ secrets.GH_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npx semantic-release
 
       - name: Build and push Docker image
         env:
           TAG: ${{ steps.semantic.outputs.nextRelease.version }}
-        run: make docker-build docker-push IMG=ghcr.io/virtool/operator:${{ env.TAG }}
+          REGISTRY: ghcr.io
+        run: make docker-build docker-push IMG={{ env.REGISTRY }}/virtool/operator:${{ env.TAG }}
