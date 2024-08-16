@@ -70,6 +70,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.11"
+
       - name: Install dependencies
         run: |
           go mod download
@@ -88,8 +93,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20.x" # Specify the Node.js version required by semantic-release
+
       - name: Install semantic-release
-        run: npm i semantic-release@v23.0.8 conventional-changelog-conventionalcommits@7.0.2
+        run: npm install -g semantic-release@23.0.8 conventional-changelog-conventionalcommits@7.0.2
 
       - name: Run semantic-release
         id: semantic
