@@ -1,19 +1,29 @@
-name: Go Test, Lint, and Release
+name: Go CI and Release
 
 on:
-  push:
-    branches: [main]
-    tags:
-      - "v*"
   pull_request:
-    branches: [main]
+    branches:
+      - "main"
+  push:
+    branches:
+      - "main"
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
+  commitlint:
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'pull_request'
     steps:
-      - name: Clone repository
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Commitlint
+        uses: wagoid/commitlint-github-action@v5
+
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Go
@@ -38,30 +48,27 @@ jobs:
       - name: Run lint
         run: make lint
 
-  test:
-    name: Build and Test
+  build:
+    runs-on: ubuntu-22.04
     needs: lint
-    runs-on: ubuntu-latest
     steps:
-      - name: Clone repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install Operator SDK
-        uses: redhat-actions/openshift-tools-installer@v1
-        with:
-          source: github
-          operator-sdk: "1.35.0"
-
-      - name: Check OperatorSDK version
-        run: operator-sdk version
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.21.11"
 
-      - name: Check Go version
-        run: go version
+      - name: Build
+        run: make build
+
+  test:
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
@@ -69,31 +76,29 @@ jobs:
           go mod verify
 
       - name: Run tests
-        run: |
-          make build
-          make test
+        run: make test
 
   release:
-    name: Release
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.21.11"
+      - name: Install semantic-release
+        run: npm i semantic-release@v23.0.8 conventional-changelog-conventionalcommits@7.0.2
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
+      - name: Run semantic-release
+        id: semantic
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_USERNAME: ${{ secrets.GH_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npx semantic-release
+
+      - name: Build and push Docker image
+        env:
+          TAG: ${{ steps.semantic.outputs.nextRelease.version }}
+        run: make docker-build docker-push IMG=ghcr.io/virtool/operator:${{ env.TAG }}
