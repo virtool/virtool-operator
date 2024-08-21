@@ -8,11 +8,6 @@ import (
 	virtoolv1alpha1 "github.com/bryce-davidson/virtool-operator/api/v1alpha1"
 )
 
-func pointer(i int32) *int32 {
-	copy := i
-	return &copy
-}
-
 type VirtoolAppOption func(*virtoolv1alpha1.VirtoolApp)
 
 const (
