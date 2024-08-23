@@ -1,3 +1,11 @@
 {
-  "branches": ["main"]
+  "branches": ["main"],
+  "plugins": [
+    ["@semantic-release/commit-analyzer", {
+      "preset": "conventionalcommits"
+    }],
+    "@semantic-release/github"
+  ],
+  "repositoryUrl": "https://github.com/virtool/virtool-operator.git",
+  "tagFormat": "${version}"
 }
