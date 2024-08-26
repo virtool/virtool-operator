@@ -111,4 +111,4 @@ jobs:
         env:
           TAG: ${{ steps.semantic.outputs.nextRelease.version }}
           REGISTRY: ghcr.io
-        run: make docker-build docker-push IMG={{ env.REGISTRY }}/virtool/operator:${{ env.TAG }}
+        run: make docker-build docker-push IMG=${{ env.REGISTRY }}/virtool/operator:${{ env.TAG }}
